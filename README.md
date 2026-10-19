@@ -19,7 +19,15 @@ npm ci
 Copy-Item .env.example .env
 ```
 
-Buat database MySQL lokal, lalu isi `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, dan `DB_PASSWORD` pada `.env`. `.env.example` hanya memuat nilai contoh; jangan menaruh kredensial nyata ke Git.
+Buat database MySQL lokal bernama `varez_ai_mutu` melalui phpMyAdmin (pilih **New**, isi nama database, gunakan collation `utf8mb4_unicode_ci`, lalu **Create**) atau jalankan SQL berikut di tab SQL:
+
+```sql
+CREATE DATABASE varez_ai_mutu
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+```
+
+Isi `.env` lokal dengan `DB_CONNECTION=mysql`, `DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_DATABASE=varez_ai_mutu`, serta username/password MySQL Laragon milik Anda. Instalasi Laragon standar sering menggunakan `root` tanpa password; bila sudah diubah, pakai kredensial lokal Anda. `.env.example` tidak memuat kredensial nyata dan jangan commit `.env`.
 
 ```powershell
 php artisan key:generate
@@ -47,7 +55,7 @@ Perintah meminta konfirmasi dan mencatat pemberian role di audit log. `--force` 
 - Undangan terikat pada email user terverifikasi, kedaluwarsa setelah tujuh hari, dan menyimpan hash token saja. Saat ini endpoint mengembalikan token satu kali; pengiriman email belum diintegrasikan. Kirim token melalui kanal tepercaya dan jangan menaruhnya pada log.
 - Role dan permission didefinisikan oleh seeder; UI untuk mengelola permission khusus belum dibuat. Login Filament tersedia untuk Super Admin aktif, anggota tenant yang memiliki `panel.access`, atau akun dengan undangan aktif.
 
-Jalankan `php artisan db:seed` ulang setelah perubahan registry permission. Tes memakai SQLite in-memory. Migrasi harus diuji lagi pada MySQL Laragon sebelum memakai database MySQL lokal; koneksi MySQL belum diverifikasi di lingkungan ini.
+Jalankan `php artisan db:seed` ulang setelah perubahan registry permission. Tes otomatis memakai SQLite in-memory; migration juga telah dijalankan dan diverifikasi pada MySQL 8.4.3 Laragon. Database `varez_ai_mutu` dapat dilihat di phpMyAdmin.
 
 ## Menjalankan aplikasi
 

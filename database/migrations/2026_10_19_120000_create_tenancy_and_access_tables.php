@@ -102,12 +102,15 @@ return new class extends Migration
             $table->unsignedBigInteger('organizational_unit_id');
             $table->string('access_level', 20)->default('member');
             $table->timestamps();
-            $table->unique(['institution_id', 'user_id', 'organizational_unit_id']);
-            $table->foreign(['institution_id', 'user_id'])
+            $table->unique(
+                ['institution_id', 'user_id', 'organizational_unit_id'],
+                'unit_assignment_scope_unique',
+            );
+            $table->foreign(['institution_id', 'user_id'], 'unit_assignment_membership_fk')
                 ->references(['institution_id', 'user_id'])
                 ->on('institution_users')
                 ->cascadeOnDelete();
-            $table->foreign(['institution_id', 'organizational_unit_id'])
+            $table->foreign(['institution_id', 'organizational_unit_id'], 'unit_assignment_unit_fk')
                 ->references(['institution_id', 'id'])
                 ->on('organizational_units')
                 ->restrictOnDelete();
