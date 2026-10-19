@@ -5,7 +5,7 @@ namespace App\Services\Ai;
 use App\Models\DocumentChunk;
 use App\Models\Embedding;
 use App\Services\Ai\Contracts\EmbeddingProviderInterface;
-use Illuminate\Support\Str;
+use RuntimeException;
 
 class EmbeddingService
 {
@@ -20,10 +20,10 @@ class EmbeddingService
     public function generateForChunks(array $chunks): array
     {
         if (! $this->provider->isConfigured()) {
-            return [];
+            throw new RuntimeException('Embedding provider is not configured.');
         }
 
-        $texts = array_values(array_map(fn (DocumentChunk $chunk) => $chunk->content_text, $chunks));
+        $texts = array_map(fn (DocumentChunk $chunk) => $chunk->content_text, $chunks);
         $vectors = $this->provider->embed($texts, ['dimensions' => config('ai.embedding.dimensions', 1536)]);
         $results = [];
 

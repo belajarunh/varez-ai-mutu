@@ -15,11 +15,14 @@ use App\Models\User;
 use App\Services\Ai\AiGenerationService;
 use App\Services\Ai\DocumentRagRetriever;
 use App\Services\Ai\EmbeddingService;
+use App\Services\Ai\Providers\OpenAiEmbeddingProvider;
+use App\Services\Ai\Providers\OpenAiTextGenerationProvider;
 use App\Services\Ai\Support\AiProviderRegistry;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Tests\TestCase;
 
 class AiRagSecurityTest extends TestCase
@@ -32,6 +35,22 @@ class AiRagSecurityTest extends TestCase
         Storage::fake('local');
         Queue::fake();
         $this->seed(RolePermissionSeeder::class);
+    }
+
+    public function test_openai_text_provider_stub_never_returns_a_success_shaped_placeholder(): void
+    {
+        $provider = new OpenAiTextGenerationProvider('test-key', 'https://example.invalid', 'test-model');
+
+        $this->expectException(RuntimeException::class);
+        $provider->generate([['role' => 'user', 'content' => 'Do not generate a mock response.']]);
+    }
+
+    public function test_openai_embedding_provider_stub_never_returns_zero_vectors(): void
+    {
+        $provider = new OpenAiEmbeddingProvider('test-key', 'https://example.invalid', 'test-model', 3);
+
+        $this->expectException(RuntimeException::class);
+        $provider->embed(['Do not return a fake vector.']);
     }
 
     public function test_provider_registry_uses_mock_when_unconfigured_and_retrieval_filters_tenant(): void
@@ -126,6 +145,69 @@ class AiRagSecurityTest extends TestCase
         $this->assertTrue($embeddingService->validateCompatibility(1536));
 
         $this->assertTrue(true);
+    }
+
+    public function test_retrieval_observes_unit_and_document_access_permissions(): void
+    {
+        config()->set('ai.embedding.provider', 'mock');
+        config()->set('ai.generation.provider', 'mock');
+
+        $institution = $this->createInstitution('tenant-unit-rag');
+        $member = User::factory()->create();
+        $memberRole = Role::query()->where('scope', 'tenant')->where('slug', 'tenant.member')->firstOrFail();
+        $this->attachMembership($institution, $member, $memberRole);
+
+        $unit = $institution->organizationalUnits()->create([
+            'unit_type' => 'department',
+            'name' => 'Restricted department',
+            'code' => 'RESTRICTED',
+        ]);
+        $category = DocumentCategory::query()->create([
+            'institution_id' => $institution->getKey(),
+            'code' => 'unit-evidence',
+            'name' => 'Unit evidence',
+            'ppepp_stage' => 'evaluasi',
+            'access_default' => Document::ACCESS_UNIT,
+            'is_active' => true,
+        ]);
+
+        $tenantDocument = $this->uploadDocumentFor($institution, $member, 'tenant-evidence', $category);
+        $unitDocument = $this->uploadDocumentFor($institution, $member, 'unit-evidence', $category);
+        $unitDocument->forceFill([
+            'unit_id' => $unit->getKey(),
+            'access_level' => Document::ACCESS_UNIT,
+        ])->save();
+
+        foreach ([
+            [$tenantDocument, 'Institution evidence is visible.'],
+            [$unitDocument, 'Restricted department evidence is secret.'],
+        ] as [$document, $content]) {
+            $version = $document->currentVersion()->firstOrFail();
+            DocumentChunk::query()->create([
+                'institution_id' => $institution->getKey(),
+                'document_version_id' => $version->getKey(),
+                'chunk_index' => 0,
+                'content_text' => $content,
+                'page_start' => 1,
+                'page_end' => 1,
+                'section_title' => 'Evidence',
+                'token_estimate' => 5,
+                'content_hash' => hash('sha256', $content),
+                'index_status' => 'ready',
+                'metadata_json' => [],
+            ]);
+        }
+
+        $results = app(DocumentRagRetriever::class)->retrieve(
+            $institution->getKey(),
+            $member->getKey(),
+            'evidence',
+            10,
+        );
+
+        $this->assertCount(1, $results);
+        $this->assertSame($tenantDocument->current_version_id, $results[0]['document_version_id']);
+        $this->assertStringNotContainsString('secret', strtolower($results[0]['content']));
     }
 
     private function createInstitution(string $slug): Institution

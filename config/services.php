@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'billing' => [
+        'gateway' => [
+            'enabled' => env('BILLING_GATEWAY_ENABLED', false),
+            'name' => env('BILLING_GATEWAY_NAME'),
+        ],
+        'webhook_secret' => env('BILLING_WEBHOOK_SECRET'),
+    ],
+
 ];

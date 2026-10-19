@@ -7,18 +7,29 @@ use App\Models\AiGenerationReview;
 use App\Models\AiGenerationVersion;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class AiReviewService
 {
-    public function submitForReview(AiGeneration $generation, ?User $reviewer = null): AiGeneration
+    public function submitForReview(AiGeneration $generation, User $reviewer): AiGeneration
     {
+        if (! $generation->canBeReviewedBy($reviewer)) {
+            throw new AuthorizationException('User cannot submit this AI generation for review.');
+        }
+
+        if (! in_array($generation->status, [
+            AiGeneration::STATUS_DRAFT,
+            AiGeneration::STATUS_REVISION_REQUESTED,
+        ], true)) {
+            throw new InvalidArgumentException('Only draft or revision-requested generations can be submitted.');
+        }
+
         $generation->status = AiGeneration::STATUS_IN_REVIEW;
         $generation->save();
 
         AiGenerationReview::query()->create([
             'ai_generation_id' => $generation->getKey(),
-            'reviewer_user_id' => $reviewer?->getKey(),
+            'reviewer_user_id' => $reviewer->getKey(),
             'decision' => AiGenerationReview::DECISION_SUBMITTED,
             'notes' => 'Submitted for review.',
             'reviewed_at' => now(),
@@ -35,6 +46,7 @@ class AiReviewService
             throw new AuthorizationException('User cannot approve this AI generation.');
         }
 
+        $this->ensureInReview($generation);
         $generation->status = AiGeneration::STATUS_APPROVED;
         $generation->save();
 
@@ -55,6 +67,7 @@ class AiReviewService
             throw new AuthorizationException('User cannot request revision for this AI generation.');
         }
 
+        $this->ensureInReview($generation);
         $generation->status = AiGeneration::STATUS_REVISION_REQUESTED;
         $generation->save();
 
@@ -75,6 +88,7 @@ class AiReviewService
             throw new AuthorizationException('User cannot reject this AI generation.');
         }
 
+        $this->ensureInReview($generation);
         $generation->status = AiGeneration::STATUS_REJECTED;
         $generation->save();
 
@@ -100,5 +114,12 @@ class AiReviewService
             'snapshot_checksum' => hash('sha256', (string) json_encode($generation->result_json ?? [], JSON_THROW_ON_ERROR)),
             'created_by_user_id' => $reviewer?->getKey() ?? $generation->user_id,
         ]);
+    }
+
+    private function ensureInReview(AiGeneration $generation): void
+    {
+        if ($generation->status !== AiGeneration::STATUS_IN_REVIEW) {
+            throw new InvalidArgumentException('Only generations currently in review can receive a review decision.');
+        }
     }
 }

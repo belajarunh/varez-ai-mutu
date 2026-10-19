@@ -2,6 +2,4 @@
 
 namespace App\Models;
 
-class PaymentTransaction extends Payment
-{
-}
+class PaymentTransaction extends Payment {}

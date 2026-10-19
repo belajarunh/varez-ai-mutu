@@ -18,20 +18,18 @@ class OpenAiTextGenerationProvider implements TextGenerationProviderInterface
         return 'openai';
     }
 
+    /**
+     * @param  list<array{role: string, content: string}>  $messages
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
     public function generate(array $messages, array $options = []): array
     {
         if ($this->apiKey === '') {
             throw new RuntimeException('OpenAI text generation provider is not configured.');
         }
 
-        $text = collect($messages)->map(fn ($message) => $message['content'] ?? '')->implode("\n");
-
-        return [
-            'provider' => 'openai',
-            'model' => $this->model,
-            'content' => '[OpenAI provider placeholder] '.$text,
-            'usage' => ['prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0],
-        ];
+        throw new RuntimeException('OpenAI text generation is not implemented; no provider request was sent.');
     }
 
     public function isConfigured(): bool

@@ -33,7 +33,7 @@ class MockEmbeddingProvider implements EmbeddingProviderInterface
 
     public function isConfigured(): bool
     {
-        return true;
+        return app()->environment('testing');
     }
 
     /** @return array<string, mixed> */

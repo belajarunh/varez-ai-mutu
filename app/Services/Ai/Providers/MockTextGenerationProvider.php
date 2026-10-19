@@ -11,9 +11,16 @@ class MockTextGenerationProvider implements TextGenerationProviderInterface
         return 'mock';
     }
 
+    /**
+     * @param  list<array{role: string, content: string}>  $messages
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
     public function generate(array $messages, array $options = []): array
     {
-        $prompt = collect($messages)->last()['content'] ?? 'No prompt provided';
+        $prompt = $messages === []
+            ? 'No prompt provided'
+            : $messages[array_key_last($messages)]['content'];
 
         return [
             'provider' => 'mock',
@@ -29,7 +36,7 @@ class MockTextGenerationProvider implements TextGenerationProviderInterface
 
     public function isConfigured(): bool
     {
-        return true;
+        return app()->environment('testing');
     }
 
     /** @return array<string, mixed> */

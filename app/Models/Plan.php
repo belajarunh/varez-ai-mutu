@@ -2,6 +2,4 @@
 
 namespace App\Models;
 
-class Plan extends SaasPlan
-{
-}
+class Plan extends SaasPlan {}

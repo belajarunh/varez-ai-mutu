@@ -5,8 +5,8 @@ namespace App\Services\Billing;
 use App\Models\AccreditationProject;
 use App\Models\Document;
 use App\Models\Institution;
-use App\Models\User;
 use App\Models\UsageLedger;
+use App\Models\User;
 
 class DashboardMetricsService
 {
@@ -27,17 +27,20 @@ class DashboardMetricsService
 
         $projects = AccreditationProject::query()->where('institution_id', $institution->getKey())->count();
         $documents = Document::query()->where('institution_id', $institution->getKey())->count();
+        $period = now()->format('Y-m');
         $aiUsage = (float) UsageLedger::query()
             ->where('institution_id', $institution->getKey())
             ->where('usage_type', 'ai_tokens')
+            ->where('period_key', $period)
             ->sum('quantity');
         $storage = (float) UsageLedger::query()
             ->where('institution_id', $institution->getKey())
             ->where('usage_type', 'storage_mb')
+            ->where('period_key', $period)
             ->sum('quantity');
 
         return [
-            'period' => now()->format('Y-m'),
+            'period' => $period,
             'institution_id' => $institution->getKey(),
             'project_count' => $projects,
             'document_count' => $documents,
@@ -54,6 +57,18 @@ class DashboardMetricsService
                 'data_gaps' => 'review_required',
                 'deadline_window' => 'current_period',
                 'source_of_truth' => 'institution_scope',
+            ],
+            'metric_definitions' => [
+                'project_count' => 'Total accreditation projects currently in this institution.',
+                'document_count' => 'Total documents currently in this institution.',
+                'ai_usage_tokens' => 'Sum of ai_tokens usage ledger entries for the displayed month.',
+                'storage_mb' => 'Sum of storage_mb usage ledger entries for the displayed month.',
+            ],
+            'metric_sources' => [
+                'project_count' => 'accreditation_projects.institution_id',
+                'document_count' => 'documents.institution_id',
+                'ai_usage_tokens' => 'usage_ledgers where usage_type=ai_tokens and period_key matches period.',
+                'storage_mb' => 'usage_ledgers where usage_type=storage_mb and period_key matches period.',
             ],
         ];
     }

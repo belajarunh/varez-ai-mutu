@@ -16,12 +16,12 @@ class AiServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(AiProviderRegistry::class, function (): AiProviderRegistry {
-            $registry = new AiProviderRegistry();
+            $registry = new AiProviderRegistry;
             $embeddingProvider = config('ai.embedding.provider');
             $generationProvider = config('ai.generation.provider');
 
-            $registry->registerEmbedding('mock', new MockEmbeddingProvider());
-            $registry->registerGeneration('mock', new MockTextGenerationProvider());
+            $registry->registerEmbedding('mock', new MockEmbeddingProvider);
+            $registry->registerGeneration('mock', new MockTextGenerationProvider);
 
             $registry->registerEmbedding('openai', new OpenAiEmbeddingProvider(
                 (string) config('ai.providers.openai.api_key', ''),
@@ -36,11 +36,11 @@ class AiServiceProvider extends ServiceProvider
             ));
 
             if ($embeddingProvider !== 'mock' && ! $registry->getEmbedding($embeddingProvider)->isConfigured()) {
-                $registry->registerEmbedding($embeddingProvider, new MockEmbeddingProvider());
+                $registry->registerEmbedding($embeddingProvider, new MockEmbeddingProvider);
             }
 
             if ($generationProvider !== 'mock' && ! $registry->getGeneration($generationProvider)->isConfigured()) {
-                $registry->registerGeneration($generationProvider, new MockTextGenerationProvider());
+                $registry->registerGeneration($generationProvider, new MockTextGenerationProvider);
             }
 
             return $registry;
@@ -48,11 +48,13 @@ class AiServiceProvider extends ServiceProvider
 
         $this->app->bind(EmbeddingProviderInterface::class, function ($app): EmbeddingProviderInterface {
             $provider = config('ai.embedding.provider', 'mock');
+
             return $app->make(AiProviderRegistry::class)->getEmbedding($provider);
         });
 
         $this->app->bind(TextGenerationProviderInterface::class, function ($app): TextGenerationProviderInterface {
             $provider = config('ai.generation.provider', 'mock');
+
             return $app->make(AiProviderRegistry::class)->getGeneration($provider);
         });
     }

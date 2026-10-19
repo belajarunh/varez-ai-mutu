@@ -11,13 +11,20 @@ use App\Models\DocumentChunk;
 use App\Models\DocumentVersion;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
+use App\Models\Instrument;
+use App\Models\InstrumentNode;
+use App\Models\InstrumentVersion;
 use App\Models\ProjectIndicator;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Ai\AiGenerationExportService;
+use App\Services\Ai\AiGenerationService;
 use App\Services\Ai\AiReviewService;
+use App\Services\Ai\Contracts\TextGenerationProviderInterface;
+use App\Services\Ai\DocumentRagRetriever;
 use App\Services\Ai\NarrativeDraftGenerator;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -142,6 +149,44 @@ class AiNarrativeGenerationTest extends TestCase
 
         $this->assertSame('needs_more_evidence', $result['status']);
         $this->assertNotEmpty($result['missing_data']);
+
+        $unconfiguredProvider = new class implements TextGenerationProviderInterface
+        {
+            public function name(): string
+            {
+                return 'unconfigured';
+            }
+
+            public function generate(array $messages, array $options = []): array
+            {
+                throw new \RuntimeException('An unconfigured provider should not be called.');
+            }
+
+            public function isConfigured(): bool
+            {
+                return false;
+            }
+
+            public function metadata(): array
+            {
+                return [];
+            }
+        };
+        $unavailableGenerator = new NarrativeDraftGenerator(
+            new AiGenerationService($unconfiguredProvider),
+            app(DocumentRagRetriever::class),
+        );
+        $unavailable = $unavailableGenerator->generate(
+            $institution,
+            $owner,
+            $project,
+            $indicator,
+            ['query' => 'Kepuasan mahasiswa'],
+        );
+
+        $this->assertSame('not_configured', $unavailable['status']);
+        $this->assertSame([], $unavailable['factual_claims']);
+        $this->assertSame([], $unavailable['citations']);
     }
 
     public function test_generation_can_be_reviewed_and_exported_after_approval(): void
@@ -178,6 +223,24 @@ class AiNarrativeGenerationTest extends TestCase
         $this->assertDatabaseHas('ai_generation_exports', ['ai_generation_id' => $generation->getKey()]);
     }
 
+    public function test_user_without_review_permission_cannot_submit_generation(): void
+    {
+        $institution = $this->createInstitution('narrative-d');
+        $creator = User::factory()->create();
+        $reviewer = User::factory()->create();
+        $generation = AiGeneration::query()->create([
+            'institution_id' => $institution->getKey(),
+            'user_id' => $creator->getKey(),
+            'task_type' => 'draft_narrative',
+            'provider' => 'mock',
+            'status' => AiGeneration::STATUS_DRAFT,
+            'result_json' => ['summary' => 'Draft'],
+        ]);
+
+        $this->expectException(AuthorizationException::class);
+        app(AiReviewService::class)->submitForReview($generation, $reviewer);
+    }
+
     private function createInstitution(string $slug): Institution
     {
         $institution = Institution::query()->create([
@@ -191,7 +254,7 @@ class AiNarrativeGenerationTest extends TestCase
         return $institution;
     }
 
-    private function createInstrumentVersion(Institution $institution): \App\Models\InstrumentVersion
+    private function createInstrumentVersion(Institution $institution): InstrumentVersion
     {
         $body = AccreditationBody::query()->firstOrCreate([
             'domain_type' => 'higher_education',
@@ -201,7 +264,7 @@ class AiNarrativeGenerationTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $instrument = \App\Models\Instrument::query()->firstOrCreate([
+        $instrument = Instrument::query()->firstOrCreate([
             'domain_type' => 'higher_education',
             'code' => 'demo-instrument',
         ], [
@@ -212,7 +275,7 @@ class AiNarrativeGenerationTest extends TestCase
             'status' => 'internal',
         ]);
 
-        return \App\Models\InstrumentVersion::query()->firstOrCreate([
+        return InstrumentVersion::query()->firstOrCreate([
             'instrument_id' => $instrument->getKey(),
             'version_label' => 'v1',
         ], [
@@ -222,9 +285,9 @@ class AiNarrativeGenerationTest extends TestCase
         ]);
     }
 
-    private function createInstrumentNode(int $versionId): \App\Models\InstrumentNode
+    private function createInstrumentNode(int $versionId): InstrumentNode
     {
-        return \App\Models\InstrumentNode::query()->firstOrCreate([
+        return InstrumentNode::query()->firstOrCreate([
             'instrument_version_id' => $versionId,
             'code' => 'demo-node',
         ], [

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\BillingInvoice;
 use App\Models\Institution;
 use App\Models\InstitutionSubscription;
 use App\Models\InstitutionUser;
@@ -47,18 +48,38 @@ class SaaSBillingDashboardTest extends TestCase
         ]);
 
         $service = app(UsageQuotaService::class);
+        $noPlan = $service->checkQuota($institution, 'ai_tokens', 1, '2026-10');
+        $this->assertFalse($noPlan['allowed']);
+        $this->assertSame('no_active_subscription', $noPlan['status']);
+
         $service->changePlan($institution, $plan, $owner);
+        $service->recordUsage($institution, $owner, 'ai_tokens', 700, 'tokens', 'ai_generation', 1, '2026-10');
         $service->recordUsage($institution, $owner, 'ai_tokens', 700, 'tokens', 'ai_generation', 1, '2026-10');
 
         $check = $service->checkQuota($institution, 'ai_tokens', 400, '2026-10');
 
         $this->assertFalse($check['allowed']);
         $this->assertSame(300.0, round((float) $check['remaining'], 1));
+        $this->assertDatabaseCount('usage_ledgers', 1);
         $this->assertDatabaseHas('usage_ledgers', [
             'institution_id' => $institution->getKey(),
             'usage_type' => 'ai_tokens',
             'quantity' => 700,
         ]);
+
+        $zeroQuotaPlan = SaasPlan::query()->create([
+            'code' => 'zero-ai',
+            'name' => 'No AI',
+            'billing_interval' => 'monthly',
+            'price' => 0,
+            'currency' => 'IDR',
+            'status' => 'active',
+            'ai_quota_limit' => 0,
+        ]);
+        $service->changePlan($institution, $zeroQuotaPlan, $owner);
+        $zeroQuota = $service->checkQuota($institution, 'ai_tokens', 1, '2026-10');
+        $this->assertFalse($zeroQuota['allowed']);
+        $this->assertSame(0, $zeroQuota['quota_limit']);
     }
 
     public function test_subscription_plan_change_and_dashboard_permission_are_scoped(): void
@@ -88,16 +109,35 @@ class SaaSBillingDashboardTest extends TestCase
         $this->assertInstanceOf(InstitutionSubscription::class, $subscription);
         $this->assertSame('active', $subscription->status);
 
+        $premium = SaasPlan::query()->create([
+            'code' => 'premium',
+            'name' => 'Premium',
+            'billing_interval' => 'monthly',
+            'price' => 400000,
+            'currency' => 'IDR',
+            'status' => 'active',
+            'ai_quota_limit' => null,
+            'storage_quota_mb' => null,
+            'users_quota_limit' => null,
+            'projects_quota_limit' => null,
+            'unit_quota_limit' => null,
+        ]);
+        $nextSubscription = $service->changePlan($institution, $premium, $owner);
+        $this->assertSame('ended', $subscription->fresh()->status);
+        $this->assertSame('active', $nextSubscription->status);
+        $this->assertTrue($service->checkQuota($institution, 'ai_tokens', 100000)['allowed']);
+
         $dashboard = app(DashboardMetricsService::class);
         $dashboardData = $dashboard->forInstitution($institution, $owner);
         $this->assertSame($institution->getKey(), $dashboardData['institution_id']);
         $this->assertArrayHasKey('health', $dashboardData);
+        $this->assertSame('forbidden', $dashboard->forInstitution($institution, User::factory()->create())['status']);
     }
 
     public function test_duplicate_webhooks_are_ignored_and_manual_activation_is_supported(): void
     {
         $institution = $this->createInstitution('saas-c');
-        $invoice = \App\Models\BillingInvoice::query()->create([
+        $invoice = BillingInvoice::query()->create([
             'institution_id' => $institution->getKey(),
             'invoice_number' => 'INV-1001',
             'status' => 'draft',
@@ -108,6 +148,7 @@ class SaaSBillingDashboardTest extends TestCase
         $service = app(PaymentGatewayService::class);
         $manual = $service->createManualSubscription($institution, $invoice);
         $this->assertSame('manual_activation_pending', $manual['status']);
+        $this->assertSame('gateway_disabled', $service->handleWebhook('{}', 'anything')['status']);
 
         config()->set('services.billing.gateway.enabled', true);
         config()->set('services.billing.webhook_secret', 'demo-secret');
@@ -116,19 +157,24 @@ class SaaSBillingDashboardTest extends TestCase
             'institution_id' => $institution->getKey(),
             'invoice_id' => $invoice->getKey(),
             'gateway' => 'manual',
+            'event_id' => 'evt-1001',
             'external_reference' => 'REF-1001',
-            'status' => 'processed',
+            'status' => 'paid',
             'amount' => 150000,
             'currency' => 'IDR',
-            'provider_status' => 'paid',
         ]);
         $signature = hash_hmac('sha256', $payload, 'demo-secret');
 
-        $first = $service->handleWebhook($payload, $signature, 'dup-key-1');
-        $second = $service->handleWebhook($payload, $signature, 'dup-key-1');
+        $this->assertSame('invalid_signature', $service->handleWebhook($payload, 'invalid', 'bad-event')['status']);
+        $first = $service->handleWebhook($payload, $signature);
+        $second = $service->handleWebhook($payload, $signature);
 
         $this->assertSame('processed', $first['status']);
         $this->assertSame('duplicate_webhook', $second['status']);
+        $this->assertDatabaseHas('billing_invoices', [
+            'id' => $invoice->getKey(),
+            'status' => 'paid',
+        ]);
     }
 
     private function attachMembership(Institution $institution, User $user, Role $role): InstitutionUser

@@ -2,6 +2,4 @@
 
 namespace App\Models;
 
-class Invoice extends BillingInvoice
-{
-}
+class Invoice extends BillingInvoice {}

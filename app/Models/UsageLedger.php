@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'institution_id', 'user_id', 'usage_type', 'quantity', 'unit', 'related_entity_type',
-    'related_entity_id', 'period_key', 'metadata_json',
+    'related_entity_id', 'period_key', 'idempotency_key', 'metadata_json',
 ])]
 class UsageLedger extends Model
 {

@@ -25,9 +25,7 @@ class OpenAiEmbeddingProvider implements EmbeddingProviderInterface
             throw new RuntimeException('OpenAI embedding provider is not configured.');
         }
 
-        $dimensions = $options['dimensions'] ?? $this->dimensions;
-
-        return array_fill(0, count($texts), array_fill(0, $dimensions, 0.0));
+        throw new RuntimeException('OpenAI embeddings are not implemented; no provider request was sent.');
     }
 
     public function dimensions(): int

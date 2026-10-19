@@ -4,8 +4,6 @@ namespace App\Services\Ai;
 
 use App\Models\DocumentChunk;
 use App\Models\Embedding;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Collection as SupportCollection;
 
 class DocumentRagRetriever
 {
@@ -56,7 +54,7 @@ class DocumentRagRetriever
                 'page_start' => $chunk->page_start,
                 'page_end' => $chunk->page_end,
                 'metadata' => $chunk->metadata_json ?? [],
-                'embedding_dimensions' => $embedding?->dimensions ?? 0,
+                'embedding_dimensions' => $embedding->dimensions ?? 0,
                 'institution_id' => $chunk->institution_id,
             ];
         })->all();

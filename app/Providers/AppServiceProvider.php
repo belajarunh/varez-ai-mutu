@@ -18,8 +18,8 @@ use App\Policies\InstrumentNodeRulePolicy;
 use App\Policies\InstrumentPolicy;
 use App\Policies\InstrumentVersionPolicy;
 use App\Policies\OrganizationalUnitPolicy;
-use App\Support\Tenancy\TenantContext;
 use App\Services\Ai\AiServiceProvider;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 

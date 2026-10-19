@@ -10,7 +10,6 @@ use App\Models\AiPromptTemplate;
 use App\Models\Institution;
 use App\Models\ProjectIndicator;
 use App\Models\User;
-use Illuminate\Support\Str;
 
 class NarrativeDraftGenerator
 {
@@ -67,6 +66,19 @@ class NarrativeDraftGenerator
             ],
             $template,
         );
+
+        if (($response['status'] ?? null) !== 'succeeded') {
+            return [
+                'status' => $response['status'] ?? 'failed',
+                'summary' => 'Draft tidak dibuat karena AI provider tidak tersedia atau gagal.',
+                'factual_claims' => [],
+                'analysis' => 'Tidak ada output AI yang dapat ditinjau.',
+                'missing_data' => array_merge($missingData, ['AI provider belum berhasil menghasilkan output.']),
+                'conflicting_sources' => [],
+                'citations' => [],
+                'sources' => $allowedSources,
+            ];
+        }
 
         $generationId = $response['generation_id'] ?? null;
         $generation = $generationId ? AiGeneration::query()->find($generationId) : null;
