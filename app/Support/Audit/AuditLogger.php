@@ -21,6 +21,21 @@ class AuditLogger
         'code',
         'role_id',
         'expires_at',
+        'title',
+        'category_id',
+        'ppepp_stage',
+        'access_default',
+        'is_active',
+        'academic_period_id',
+        'unit_id',
+        'owner_user_id',
+        'access_level',
+        'verification_status',
+        'retention_until',
+        'version_number',
+        'checksum_sha256',
+        'related_type',
+        'related_id',
     ];
 
     /**

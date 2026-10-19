@@ -1,10 +1,10 @@
 # Varez AI Mutu
 
-Varez AI Mutu memakai Laravel 13, Filament untuk panel administrasi, dan Blade + Bootstrap 5 untuk portal. Fondasi tenancy, autentikasi, RBAC, audit log, katalog instrumen berversi, proyek akreditasi, serta fondasi impor data kinerja tersedia. Repositori bukti, mutu, dan AI belum diimplementasikan.
+Varez AI Mutu memakai Laravel 13, Filament untuk panel administrasi, dan Blade + Bootstrap 5 untuk portal. Fondasi tenancy, autentikasi, RBAC, audit log, katalog instrumen berversi, proyek akreditasi, impor data kinerja, dan repositori bukti berversi tersedia. Modul mutu/AMI dan AI/RAG belum diimplementasikan.
 
 ## Kebutuhan lokal
 
-- PHP 8.3+ dengan ekstensi Laravel dan PhpSpreadsheet (`pdo_mysql`, `gd`, `zip`, `dom`, `xml`, `xmlreader`, `xmlwriter`, `mbstring`)
+- PHP 8.3+ dengan ekstensi Laravel, PhpSpreadsheet, dan parser dokumen (`pdo_mysql`, `gd`, `zip`, `dom`, `xml`, `xmlreader`, `xmlwriter`, `mbstring`, `zlib`, `iconv`, `fileinfo`)
 - Composer 2.x
 - Node.js/npm yang kompatibel dengan Vite
 - MySQL 8.0+
@@ -71,6 +71,20 @@ Pengguna tenant dengan permission `performance_data.import` dapat membuka `/inst
 
 Strategi `append` mempertahankan records lama dan menolak key duplikat. `replace` memerlukan dataset tujuan yang sama jenis/schema/periode/unit, konfirmasi penggantian saat pemetaan, dan konfirmasi kedua sebelum commit; penggantian dijalankan dalam transaksi. Baris invalid tidak pernah diimpor, dan impor parsial memerlukan konfirmasi eksplisit. Retry job tidak mengulang batch yang telah selesai. Periode, unit, schema, dan dataset tujuan diverifikasi terhadap tenant.
 
+## Repositori bukti dan pemrosesan dokumen
+
+Pengguna tenant dengan permission `documents.view` dapat membuka `/institutions/{slug}/documents`; upload memerlukan `documents.upload`. Pengelola kategori dengan `documents.categories.manage` dapat membuat kategori PPEPP yang disesuaikan dengan kebijakan institusi, mengatur default akses (`private`, `unit`, atau `institution`), serta menonaktifkan kategori tanpa menghapus histori. Metadata dokumen mencakup kategori, unit, periode akademik, pemilik, tingkat akses, status verifikasi, tanggal retensi, dan riwayat versi.
+
+Allowlist format mencakup PDF, DOCX, XLSX, CSV, PPTX, JPG/JPEG, PNG, dan WebP hingga 25 MiB. Signature/MIME diverifikasi; arsip Office diperiksa terhadap ukuran hasil ekstraksi, jumlah bagian, macro, dan objek tertanam. File disimpan di private disk dengan key acak, checksum SHA-256, dan tidak disajikan dari `public/`. Unduhan selalu melewati middleware tenant, pemeriksaan akses/permission, serta audit; konten dikirim sebagai attachment (`nosniff`), bukan melalui URL permanen atau signed URL yang dibagikan.
+
+`DOCUMENTS_DISK=local` menggunakan `storage/app/private` untuk development. Untuk production, siapkan bucket/object storage privat, pasang kredensial melalui secret manager/environment, lalu pilih `DOCUMENTS_DISK=s3` (adapter S3 sudah ada di lockfile). Pastikan bucket policy menolak akses publik dan jangan membuat public URL untuk object dokumen. Object lama tetap disimpan saat versi baru menjadi versi aktif.
+
+Pemrosesan ekstraksi dan chunk berjalan di queue. Jalankan `php artisan queue:work`. Parser mempertahankan halaman PDF/slide PPTX dan heading DOCX bila tersedia; XLSX menyimpan konteks nama sheet. Hasil tidak cukup/halaman tanpa teks berstatus `needs_review`; kegagalan parser menjadi `failed`, bukan dianggap berhasil. Scanner malware dan OCR Tesseract bersifat opsional dan dapat dikonfigurasi melalui `DOCUMENT_SCANNER_BINARY`, `DOCUMENT_OCR_BINARY`, dan `DOCUMENT_OCR_LANGUAGE`. Scanner harus kompatibel dengan CLI ClamAV (`--no-summary <path>`, exit code 0 untuk bersih dan 1 untuk terdeteksi). Tanpa scanner, versi dicatat `not_scanned`; tanpa OCR, gambar berstatus `needs_review`. Pastikan status tersebut ditinjau sebelum dokumen digunakan sebagai bukti.
+
+Jika scanner dikonfigurasi, unduhan baru tersedia setelah hasil scan `clean`; status `pending`, `scanning`, `error`, dan `infected` tidak dapat diunduh. Kegagalan menjalankan scanner ditandai sebagai error, bukan diasumsikan bersih. Tanpa scanner, `not_scanned` tetap dapat diunduh setelah otorisasi normal dan harus dipertimbangkan sebagai risiko operasional.
+
+Status ekstraksi `ready` menunjukkan ekstraksi teks memenuhi ambang dasar aplikasi, bukan verifikasi kebenaran/kelengkapan dokumen. Verifikasi bukti adalah status terpisah dan memerlukan permission `documents.verify`. Isi ekstraksi dianggap data tak tepercaya; prompt injection dan kontrol RAG akan ditangani pada tahap AI.
+
 ## Menjalankan aplikasi
 
 ```powershell
@@ -81,7 +95,7 @@ php artisan serve
 - Panel Filament: `http://127.0.0.1:8000/admin`
 - Health check Laravel: `http://127.0.0.1:8000/up`
 
-Panel admin mewajibkan autentikasi. Untuk memproses pekerjaan queue secara lokal, jalankan di terminal terpisah:
+Panel admin mewajibkan autentikasi. Untuk memproses pekerjaan queue (impor dan dokumen) secara lokal, jalankan di terminal terpisah:
 
 ```powershell
 php artisan queue:work
@@ -104,4 +118,4 @@ Atau jalankan seluruh pemeriksaan berurutan:
 composer check
 ```
 
-`composer install` menggunakan `composer.lock`; `npm ci` menggunakan `package-lock.json`. GitHub Actions menjalankan quality gates PHP dan build frontend untuk setiap push dan pull request; gunakan hasil workflow sebagai pemeriksaan sebelum merge. MySQL lokal sudah diverifikasi; persetujuan schema dataset pilot, pengiriman email undangan, MFA, SSO, modul dokumen/mutu/AI, dan operasi produksi masih menjadi pekerjaan berikutnya.
+`composer install` menggunakan `composer.lock`; `npm ci` menggunakan `package-lock.json`. GitHub Actions menjalankan quality gates PHP dan build frontend untuk setiap push dan pull request; gunakan hasil workflow sebagai pemeriksaan sebelum merge. MySQL lokal sudah diverifikasi; persetujuan schema dataset pilot, layanan scanner/OCR production, pengiriman email undangan, MFA, SSO, modul mutu/AMI dan AI/RAG, serta operasi produksi masih menjadi pekerjaan berikutnya.

@@ -21,6 +21,11 @@
                     Data kinerja
                 </a>
             @endif
+            @if (auth()->user()->hasPermission('documents.view', $tenant))
+                <a href="{{ route('institutions.documents.index', $tenant->slug) }}" class="btn btn-outline-success">
+                    Repositori bukti
+                </a>
+            @endif
         </div>
 
         @if (session('status'))

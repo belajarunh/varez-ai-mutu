@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccreditationProjectController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\MembershipController;
@@ -72,6 +73,43 @@ Route::middleware(['auth', 'verified', 'tenant.context'])
             ->whereNumber('schema')
             ->whereIn('format', ['csv', 'xlsx'])
             ->name('performance.schemas.template');
+
+        Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
+        Route::get('/documents/create', [DocumentController::class, 'create'])->name('documents.create');
+        Route::post('/documents', [DocumentController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('documents.store');
+        Route::get('/documents/categories', [DocumentController::class, 'categories'])->name('documents.categories');
+        Route::post('/documents/categories', [DocumentController::class, 'storeCategory'])
+            ->middleware('throttle:20,1')
+            ->name('documents.categories.store');
+        Route::patch('/documents/categories/{category}', [DocumentController::class, 'updateCategory'])
+            ->whereNumber('category')
+            ->name('documents.categories.update');
+        Route::get('/documents/{document}', [DocumentController::class, 'show'])
+            ->whereNumber('document')
+            ->name('documents.show');
+        Route::post('/documents/{document}/versions', [DocumentController::class, 'storeVersion'])
+            ->whereNumber('document')
+            ->middleware('throttle:10,1')
+            ->name('documents.versions.store');
+        Route::patch('/documents/{document}', [DocumentController::class, 'update'])
+            ->whereNumber('document')
+            ->name('documents.update');
+        Route::patch('/documents/{document}/verification', [DocumentController::class, 'verify'])
+            ->whereNumber('document')
+            ->name('documents.verify');
+        Route::post('/documents/{document}/relations', [DocumentController::class, 'storeRelation'])
+            ->whereNumber('document')
+            ->name('documents.relations.store');
+        Route::delete('/documents/{document}/relations/{relation}', [DocumentController::class, 'deleteRelation'])
+            ->whereNumber('document')
+            ->whereNumber('relation')
+            ->name('documents.relations.delete');
+        Route::get('/documents/{document}/versions/{version}/download', [DocumentController::class, 'download'])
+            ->whereNumber('document')
+            ->whereNumber('version')
+            ->name('documents.versions.download');
     });
 
 Route::middleware(['auth', 'verified'])
