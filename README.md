@@ -82,4 +82,4 @@ Atau jalankan seluruh pemeriksaan berurutan:
 composer check
 ```
 
-`composer install` menggunakan `composer.lock`; `npm ci` menggunakan `package-lock.json`. CI GitHub Actions belum ditambahkan karena workspace asal belum merupakan repository Git dan belum memiliki workflow Actions. Penggunaan MySQL, pengiriman email undangan, MFA, serta fitur akreditasi masih menjadi pekerjaan/keputusan berikutnya.
+`composer install` menggunakan `composer.lock`; `npm ci` menggunakan `package-lock.json`. GitHub Actions menjalankan quality gates PHP dan build frontend untuk setiap push dan pull request; gunakan hasil workflow sebagai pemeriksaan sebelum merge. Penggunaan MySQL, pengiriman email undangan, MFA, serta fitur akreditasi masih menjadi pekerjaan/keputusan berikutnya.
