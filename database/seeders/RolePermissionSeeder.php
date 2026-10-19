@@ -30,6 +30,9 @@ class RolePermissionSeeder extends Seeder
                 'members.manage' => 'Manage institution memberships and invitations',
                 'audit_logs.view' => 'View institution audit logs',
                 'roles.manage' => 'Manage institution roles and permissions',
+                'projects.view' => 'View accreditation projects',
+                'projects.create' => 'Create accreditation projects',
+                'projects.manage' => 'Manage accreditation project indicators and team',
             ],
         ];
 
@@ -75,12 +78,15 @@ class RolePermissionSeeder extends Seeder
                         'units.archive',
                         'units.access_all',
                         'audit_logs.view',
+                        'projects.view',
+                        'projects.create',
+                        'projects.manage',
                     ],
                 ],
                 'tenant.member' => [
                     'name' => 'Institution Member',
                     'description' => 'Basic institution panel and profile access.',
-                    'permissions' => ['panel.access', 'institutions.view', 'units.view'],
+                    'permissions' => ['panel.access', 'institutions.view', 'units.view', 'projects.view'],
                 ],
             ],
         ];

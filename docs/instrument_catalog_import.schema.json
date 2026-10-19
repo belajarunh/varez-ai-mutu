@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Varez AI Mutu instrument catalog import",
+  "description": "Generic, non-official data exchange format. Imported catalogs always start as internal drafts and require domain review.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["body", "instrument", "version", "nodes"],
+  "properties": {
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain_type", "code", "name"],
+      "properties": {
+        "domain_type": { "enum": ["higher_education", "school"] },
+        "code": { "type": "string", "maxLength": 80 },
+        "name": { "type": "string", "maxLength": 255 },
+        "official_url": { "type": ["string", "null"], "format": "uri", "maxLength": 2048 }
+      }
+    },
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "name", "instrument_type"],
+      "properties": {
+        "code": { "type": "string", "maxLength": 100 },
+        "name": { "type": "string", "maxLength": 255 },
+        "instrument_type": { "type": "string", "maxLength": 80 },
+        "description": { "type": ["string", "null"], "maxLength": 10000 }
+      }
+    },
+    "version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version_label"],
+      "properties": {
+        "version_label": { "type": "string", "maxLength": 80 },
+        "effective_from": { "type": ["string", "null"], "format": "date" },
+        "effective_to": { "type": ["string", "null"], "format": "date" },
+        "source_url": { "type": ["string", "null"], "format": "uri", "maxLength": 2048 },
+        "source_checksum": { "type": ["string", "null"], "pattern": "^[A-Fa-f0-9]{64}$" },
+        "notes": { "type": ["string", "null"], "maxLength": 10000 }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["node_type", "code", "title"],
+        "properties": {
+          "parent_code": { "type": ["string", "null"], "maxLength": 100 },
+          "node_type": {
+            "enum": ["standard", "criterion", "component", "dimension", "indicator", "item", "subitem"]
+          },
+          "code": { "type": "string", "maxLength": 100 },
+          "title": { "type": "string", "maxLength": 255 },
+          "guidance_text": { "type": ["string", "null"], "maxLength": 10000 },
+          "answer_type": { "type": ["string", "null"], "maxLength": 32 },
+          "validation_json": { "type": ["object", "null"] },
+          "weight": { "type": ["number", "null"], "minimum": 0, "maximum": 1000000 },
+          "sort_order": { "type": "integer", "minimum": 0, "default": 0 },
+          "required": { "type": "boolean", "default": false },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["rule_type", "rule_json", "severity"],
+              "properties": {
+                "rule_type": { "type": "string", "maxLength": 80 },
+                "rule_json": { "type": "object" },
+                "severity": { "enum": ["info", "warning", "error"] },
+                "message": { "type": ["string", "null"], "maxLength": 500 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

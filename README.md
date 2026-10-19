@@ -1,6 +1,6 @@
 # Varez AI Mutu
 
-Varez AI Mutu memakai Laravel 13, Filament untuk panel administrasi, dan Blade + Bootstrap 5 untuk portal. Fondasi tenancy, autentikasi, RBAC, undangan, serta audit log tersedia; modul akreditasi dan domain mutu belum diimplementasikan.
+Varez AI Mutu memakai Laravel 13, Filament untuk panel administrasi, dan Blade + Bootstrap 5 untuk portal. Fondasi tenancy, autentikasi, RBAC, undangan, audit log, katalog instrumen berversi, dan proyek akreditasi tersedia; modul kinerja, dokumen, mutu, dan AI belum diimplementasikan.
 
 ## Kebutuhan lokal
 
@@ -55,6 +55,12 @@ Perintah meminta konfirmasi dan mencatat pemberian role di audit log. `--force` 
 - Undangan terikat pada email user terverifikasi, kedaluwarsa setelah tujuh hari, dan menyimpan hash token saja. Saat ini endpoint mengembalikan token satu kali; pengiriman email belum diintegrasikan. Kirim token melalui kanal tepercaya dan jangan menaruhnya pada log.
 - Role dan permission didefinisikan oleh seeder; UI untuk mengelola permission khusus belum dibuat. Login Filament tersedia untuk Super Admin aktif, anggota tenant yang memiliki `panel.access`, atau akun dengan undangan aktif.
 
+## Katalog instrumen dan proyek
+
+Platform Super Admin mengelola lembaga akreditasi, instrumen, versi, dan hierarki node di panel `/admin`. Draft internal/demo tidak ditampilkan sebagai pilihan proyek resmi. Versi resmi perlu sumber lembaga dan versi terverifikasi, lalu diterbitkan dari panel. Import JSON lokal yang hanya membuat entri internal/draft didokumentasikan pada [docs/INSTRUMENT_CATALOG_IMPORT.md](./docs/INSTRUMENT_CATALOG_IMPORT.md).
+
+Pengguna tenant dengan permission `projects.create` dapat membuka `/institutions/{slug}/projects/create` untuk membuat proyek menggunakan versi terverifikasi yang sesuai dengan domain institusi. Proyek menyimpan snapshot dan checksum katalog saat dibuat; perubahan katalog berikutnya tidak mengganti snapshot. Status indikator, PIC, dan tenggat dapat dikelola dari halaman proyek. Tidak ada konten instrumen resmi yang dibuat oleh kode atau seed demo.
+
 Jalankan `php artisan db:seed` ulang setelah perubahan registry permission. Tes otomatis memakai SQLite in-memory; migration juga telah dijalankan dan diverifikasi pada MySQL 8.4.3 Laragon. Database `varez_ai_mutu` dapat dilihat di phpMyAdmin.
 
 ## Menjalankan aplikasi
@@ -90,4 +96,4 @@ Atau jalankan seluruh pemeriksaan berurutan:
 composer check
 ```
 
-`composer install` menggunakan `composer.lock`; `npm ci` menggunakan `package-lock.json`. GitHub Actions menjalankan quality gates PHP dan build frontend untuk setiap push dan pull request; gunakan hasil workflow sebagai pemeriksaan sebelum merge. Penggunaan MySQL, pengiriman email undangan, MFA, serta fitur akreditasi masih menjadi pekerjaan/keputusan berikutnya.
+`composer install` menggunakan `composer.lock`; `npm ci` menggunakan `package-lock.json`. GitHub Actions menjalankan quality gates PHP dan build frontend untuk setiap push dan pull request; gunakan hasil workflow sebagai pemeriksaan sebelum merge. MySQL lokal sudah diverifikasi; pengiriman email undangan, MFA, SSO, modul kinerja/dokumen/mutu/AI, dan operasi produksi masih menjadi pekerjaan berikutnya.

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccreditationProjectController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\InvitationController;
@@ -30,6 +31,15 @@ Route::middleware(['auth', 'verified', 'tenant.context'])
             ->middleware('throttle:10,1')
             ->name('invitations.store');
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+        Route::get('/projects', [AccreditationProjectController::class, 'index'])->name('projects.index');
+        Route::get('/projects/create', [AccreditationProjectController::class, 'create'])->name('projects.create');
+        Route::post('/projects', [AccreditationProjectController::class, 'store'])
+            ->middleware('throttle:20,1')
+            ->name('projects.store');
+        Route::get('/projects/{project}', [AccreditationProjectController::class, 'show'])->name('projects.show');
+        Route::patch('/projects/{project}/indicators/{indicator}', [AccreditationProjectController::class, 'updateIndicator'])
+            ->name('projects.indicators.update');
     });
 
 Route::middleware(['auth', 'verified'])
