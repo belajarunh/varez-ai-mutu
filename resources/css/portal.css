@@ -1,0 +1,69 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+:root {
+    --varez-ink: #172b4d;
+    --varez-muted: #61718a;
+    --varez-primary: #245c52;
+    --varez-surface: #f4f7f6;
+}
+
+body {
+    color: var(--varez-ink);
+    background: var(--varez-surface);
+}
+
+.portal-navbar {
+    background: rgb(255 255 255 / 94%);
+}
+
+.portal-brand-mark {
+    display: inline-grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    color: #fff;
+    background: var(--varez-primary);
+    border-radius: 0.75rem;
+}
+
+.portal-hero {
+    background:
+        radial-gradient(ellipse at 90% 0%, rgb(178 213 199 / 58%), transparent 38%),
+        linear-gradient(135deg, #fff 0%, #edf5f1 100%);
+}
+
+.portal-eyebrow {
+    color: var(--varez-primary);
+    letter-spacing: 0.12em;
+}
+
+.portal-text-muted {
+    color: var(--varez-muted);
+}
+
+.portal-feature-card {
+    height: 100%;
+    border: 1px solid #e3eae7;
+    border-radius: 1rem;
+}
+
+.portal-feature-icon {
+    display: inline-grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    color: var(--varez-primary);
+    background: #e8f2ed;
+    border-radius: 0.85rem;
+    font-size: 1.25rem;
+}
+
+.btn-varez {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--varez-primary);
+    --bs-btn-border-color: var(--varez-primary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #1b483f;
+    --bs-btn-hover-border-color: #1b483f;
+}
