@@ -18,6 +18,18 @@ class AiGeneration extends Model
 
     public const STATUS_RUNNING = 'running';
 
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_IN_REVIEW = 'in_review';
+
+    public const STATUS_REVISION_REQUESTED = 'revision_requested';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_EXPORTED = 'exported';
+
+    public const STATUS_FINALIZED = 'finalized';
+
     public const STATUS_SUCCEEDED = 'succeeded';
 
     public const STATUS_FAILED = 'failed';
@@ -34,6 +46,66 @@ class AiGeneration extends Model
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
         ];
+    }
+
+    /** @return HasMany<AiGenerationReview, $this> */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(AiGenerationReview::class, 'ai_generation_id');
+    }
+
+    /** @return HasMany<AiGenerationExport, $this> */
+    public function exports(): HasMany
+    {
+        return $this->hasMany(AiGenerationExport::class, 'ai_generation_id');
+    }
+
+    /** @return HasMany<AiGenerationVersion, $this> */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(AiGenerationVersion::class, 'ai_generation_id');
+    }
+
+    public function canBeReviewedBy(User $user): bool
+    {
+        $institution = $this->institution()->first();
+
+        if ($user->hasPlatformRole('platform.super_admin')) {
+            return true;
+        }
+
+        if ($institution === null) {
+            return false;
+        }
+
+        return $user->hasPermission('ai.review', $institution)
+            || $user->hasPermission('ai.approve', $institution);
+    }
+
+    public function canBeApprovedBy(User $user): bool
+    {
+        $institution = $this->institution()->first();
+
+        if ($institution === null) {
+            return false;
+        }
+
+        return $user->hasPlatformRole('platform.super_admin')
+            || $user->hasPermission('ai.approve', $institution)
+            || $user->hasPermission('ai.review', $institution);
+    }
+
+    public function canBeExportedBy(User $user): bool
+    {
+        $institution = $this->institution()->first();
+
+        if ($institution === null) {
+            return false;
+        }
+
+        return $user->hasPlatformRole('platform.super_admin')
+            || $user->hasPermission('ai.export', $institution)
+            || $user->hasPermission('ai.approve', $institution);
     }
 
     /** @return BelongsTo<Institution, $this> */

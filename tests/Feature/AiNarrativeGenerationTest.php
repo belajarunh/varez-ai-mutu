@@ -14,6 +14,8 @@ use App\Models\InstitutionUser;
 use App\Models\ProjectIndicator;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Ai\AiGenerationExportService;
+use App\Services\Ai\AiReviewService;
 use App\Services\Ai\NarrativeDraftGenerator;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -140,6 +142,40 @@ class AiNarrativeGenerationTest extends TestCase
 
         $this->assertSame('needs_more_evidence', $result['status']);
         $this->assertNotEmpty($result['missing_data']);
+    }
+
+    public function test_generation_can_be_reviewed_and_exported_after_approval(): void
+    {
+        $institution = $this->createInstitution('narrative-c');
+        $owner = User::factory()->create();
+        $role = Role::query()->where('scope', 'tenant')->where('slug', 'tenant.owner')->firstOrFail();
+        $this->attachMembership($institution, $owner, $role);
+
+        $generation = AiGeneration::query()->create([
+            'institution_id' => $institution->getKey(),
+            'project_id' => null,
+            'user_id' => $owner->getKey(),
+            'task_type' => 'draft_narrative',
+            'provider' => 'mock',
+            'model' => 'mock-model',
+            'status' => AiGeneration::STATUS_DRAFT,
+            'result_text' => 'Draft dibangun dari bukti yang relevan.',
+            'result_json' => ['summary' => 'Draft dibangun dari bukti yang relevan.'],
+        ]);
+
+        $reviewService = app(AiReviewService::class);
+        $exportService = app(AiGenerationExportService::class);
+
+        $reviewService->submitForReview($generation, $owner);
+        $reviewService->approve($generation, $owner, 'Disetujui untuk publikasi.');
+
+        $this->assertSame(AiGeneration::STATUS_APPROVED, $generation->fresh()->status);
+
+        $export = $exportService->export($generation, $owner, 'json');
+
+        $this->assertSame(AiGeneration::STATUS_EXPORTED, $generation->fresh()->status);
+        $this->assertFalse($export['watermarked']);
+        $this->assertDatabaseHas('ai_generation_exports', ['ai_generation_id' => $generation->getKey()]);
     }
 
     private function createInstitution(string $slug): Institution
