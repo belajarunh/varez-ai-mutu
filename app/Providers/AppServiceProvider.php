@@ -19,6 +19,7 @@ use App\Policies\InstrumentPolicy;
 use App\Policies\InstrumentVersionPolicy;
 use App\Policies\OrganizationalUnitPolicy;
 use App\Support\Tenancy\TenantContext;
+use App\Services\Ai\AiServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -30,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(TenantContext::class);
+        $this->app->register(AiServiceProvider::class);
     }
 
     /**
