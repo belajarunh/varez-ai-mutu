@@ -33,6 +33,8 @@ class RolePermissionSeeder extends Seeder
                 'projects.view' => 'View accreditation projects',
                 'projects.create' => 'Create accreditation projects',
                 'projects.manage' => 'Manage accreditation project indicators and team',
+                'performance_data.view' => 'View performance datasets and import history',
+                'performance_data.import' => 'Import performance data',
             ],
         ];
 
@@ -81,6 +83,8 @@ class RolePermissionSeeder extends Seeder
                         'projects.view',
                         'projects.create',
                         'projects.manage',
+                        'performance_data.view',
+                        'performance_data.import',
                     ],
                 ],
                 'tenant.member' => [

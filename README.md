@@ -1,10 +1,10 @@
 # Varez AI Mutu
 
-Varez AI Mutu memakai Laravel 13, Filament untuk panel administrasi, dan Blade + Bootstrap 5 untuk portal. Fondasi tenancy, autentikasi, RBAC, undangan, audit log, katalog instrumen berversi, dan proyek akreditasi tersedia; modul kinerja, dokumen, mutu, dan AI belum diimplementasikan.
+Varez AI Mutu memakai Laravel 13, Filament untuk panel administrasi, dan Blade + Bootstrap 5 untuk portal. Fondasi tenancy, autentikasi, RBAC, audit log, katalog instrumen berversi, proyek akreditasi, serta fondasi impor data kinerja tersedia. Repositori bukti, mutu, dan AI belum diimplementasikan.
 
 ## Kebutuhan lokal
 
-- PHP 8.3+ dengan ekstensi yang diperlukan Laravel dan `pdo_mysql`
+- PHP 8.3+ dengan ekstensi Laravel dan PhpSpreadsheet (`pdo_mysql`, `gd`, `zip`, `dom`, `xml`, `xmlreader`, `xmlwriter`, `mbstring`)
 - Composer 2.x
 - Node.js/npm yang kompatibel dengan Vite
 - MySQL 8.0+
@@ -63,6 +63,14 @@ Pengguna tenant dengan permission `projects.create` dapat membuka `/institutions
 
 Jalankan `php artisan db:seed` ulang setelah perubahan registry permission. Tes otomatis memakai SQLite in-memory; migration juga telah dijalankan dan diverifikasi pada MySQL 8.4.3 Laragon. Database `varez_ai_mutu` dapat dilihat di phpMyAdmin.
 
+## Impor data kinerja
+
+Platform Super Admin membuat schema berversi pada `/admin/performance-dataset-schemas`, mengisi field, tipe (`string`, `integer`, `decimal`, `date`, `boolean`), dan menandai `record_key` sebagai wajib serta unik; schema kemudian diterbitkan. Tidak ada jenis dataset atau nilai kinerja domain yang di-hardcode maupun diklaim resmi sebelum disepakati dengan pemilik domain. Versi yang sudah terbit tidak dapat diedit; buat versi baru untuk perubahan schema.
+
+Pengguna tenant dengan permission `performance_data.import` dapat membuka `/institutions/{slug}/performance/imports/create`. Buat/pilih periode akademik, unggah CSV UTF-8 atau XLSX hingga 10 MB, petakan kolom, tinjau pratinjau/error, lalu konfirmasi. File disimpan di private local storage pada development dengan checksum SHA-256; gunakan disk/object storage privat yang sesuai untuk deployment. Pemeriksaan file, validasi baris, dan commit berjalan di queue. Jalankan `php artisan queue:work` di terminal terpisah. Error report hanya tersedia setelah otorisasi tenant server-side.
+
+Strategi `append` mempertahankan records lama dan menolak key duplikat. `replace` memerlukan dataset tujuan yang sama jenis/schema/periode/unit, konfirmasi penggantian saat pemetaan, dan konfirmasi kedua sebelum commit; penggantian dijalankan dalam transaksi. Baris invalid tidak pernah diimpor, dan impor parsial memerlukan konfirmasi eksplisit. Retry job tidak mengulang batch yang telah selesai. Periode, unit, schema, dan dataset tujuan diverifikasi terhadap tenant.
+
 ## Menjalankan aplikasi
 
 ```powershell
@@ -96,4 +104,4 @@ Atau jalankan seluruh pemeriksaan berurutan:
 composer check
 ```
 
-`composer install` menggunakan `composer.lock`; `npm ci` menggunakan `package-lock.json`. GitHub Actions menjalankan quality gates PHP dan build frontend untuk setiap push dan pull request; gunakan hasil workflow sebagai pemeriksaan sebelum merge. MySQL lokal sudah diverifikasi; pengiriman email undangan, MFA, SSO, modul kinerja/dokumen/mutu/AI, dan operasi produksi masih menjadi pekerjaan berikutnya.
+`composer install` menggunakan `composer.lock`; `npm ci` menggunakan `package-lock.json`. GitHub Actions menjalankan quality gates PHP dan build frontend untuk setiap push dan pull request; gunakan hasil workflow sebagai pemeriksaan sebelum merge. MySQL lokal sudah diverifikasi; persetujuan schema dataset pilot, pengiriman email undangan, MFA, SSO, modul dokumen/mutu/AI, dan operasi produksi masih menjadi pekerjaan berikutnya.

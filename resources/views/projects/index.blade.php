@@ -16,6 +16,11 @@
                     Buat proyek
                 </a>
             @endif
+            @if (auth()->user()->hasPermission('performance_data.view', $tenant))
+                <a href="{{ route('institutions.performance.index', $tenant->slug) }}" class="btn btn-outline-success">
+                    Data kinerja
+                </a>
+            @endif
         </div>
 
         @if (session('status'))

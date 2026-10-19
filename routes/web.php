@@ -6,6 +6,7 @@ use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\OrganizationalUnitController;
+use App\Http\Controllers\PerformanceImportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -40,6 +41,37 @@ Route::middleware(['auth', 'verified', 'tenant.context'])
         Route::get('/projects/{project}', [AccreditationProjectController::class, 'show'])->name('projects.show');
         Route::patch('/projects/{project}/indicators/{indicator}', [AccreditationProjectController::class, 'updateIndicator'])
             ->name('projects.indicators.update');
+
+        Route::get('/performance', [PerformanceImportController::class, 'index'])->name('performance.index');
+        Route::get('/performance/imports/create', [PerformanceImportController::class, 'create'])
+            ->name('performance.imports.create');
+        Route::post('/performance/periods', [PerformanceImportController::class, 'createPeriod'])
+            ->middleware('throttle:20,1')
+            ->name('performance.periods.store');
+        Route::post('/performance/imports', [PerformanceImportController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('performance.imports.store');
+        Route::get('/performance/imports/{batch}/mapping', [PerformanceImportController::class, 'mapping'])
+            ->whereNumber('batch')
+            ->name('performance.imports.mapping');
+        Route::post('/performance/imports/{batch}/validate', [PerformanceImportController::class, 'startValidation'])
+            ->whereNumber('batch')
+            ->middleware('throttle:20,1')
+            ->name('performance.imports.validate');
+        Route::get('/performance/imports/{batch}', [PerformanceImportController::class, 'show'])
+            ->whereNumber('batch')
+            ->name('performance.imports.show');
+        Route::post('/performance/imports/{batch}/confirm', [PerformanceImportController::class, 'confirm'])
+            ->whereNumber('batch')
+            ->middleware('throttle:20,1')
+            ->name('performance.imports.confirm');
+        Route::get('/performance/imports/{batch}/errors.csv', [PerformanceImportController::class, 'errorReport'])
+            ->whereNumber('batch')
+            ->name('performance.imports.errors');
+        Route::get('/performance/schemas/{schema}/template/{format}', [PerformanceImportController::class, 'template'])
+            ->whereNumber('schema')
+            ->whereIn('format', ['csv', 'xlsx'])
+            ->name('performance.schemas.template');
     });
 
 Route::middleware(['auth', 'verified'])
