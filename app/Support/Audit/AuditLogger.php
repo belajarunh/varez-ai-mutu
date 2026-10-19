@@ -36,6 +36,23 @@ class AuditLogger
         'checksum_sha256',
         'related_type',
         'related_id',
+        'stage',
+        'standard_id',
+        'indicator_id',
+        'audit_session_id',
+        'checklist_item_id',
+        'finding_id',
+        'severity',
+        'action_id',
+        'due_date',
+        'version',
+        'effective_from',
+        'effective_to',
+        'frequency',
+        'require_effectiveness_verification',
+        'require_independent_verifier',
+        'effectiveness_status',
+        'approved_by',
     ];
 
     /**

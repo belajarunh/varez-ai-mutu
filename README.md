@@ -1,6 +1,6 @@
 # Varez AI Mutu
 
-Varez AI Mutu memakai Laravel 13, Filament untuk panel administrasi, dan Blade + Bootstrap 5 untuk portal. Fondasi tenancy, autentikasi, RBAC, audit log, katalog instrumen berversi, proyek akreditasi, impor data kinerja, dan repositori bukti berversi tersedia. Modul mutu/AMI dan AI/RAG belum diimplementasikan.
+Varez AI Mutu memakai Laravel 13, Filament untuk panel administrasi, dan Blade + Bootstrap 5 untuk portal. Fondasi tenancy, autentikasi, RBAC, audit log, katalog instrumen berversi, proyek akreditasi, impor data kinerja, repositori bukti berversi, serta alur SPMI/PPEPP/AMI dan RTL/CAPA tersedia. Integrasi AI/RAG belum diimplementasikan.
 
 ## Kebutuhan lokal
 
@@ -85,6 +85,16 @@ Jika scanner dikonfigurasi, unduhan baru tersedia setelah hasil scan `clean`; st
 
 Status ekstraksi `ready` menunjukkan ekstraksi teks memenuhi ambang dasar aplikasi, bukan verifikasi kebenaran/kelengkapan dokumen. Verifikasi bukti adalah status terpisah dan memerlukan permission `documents.verify`. Isi ekstraksi dianggap data tak tepercaya; prompt injection dan kontrol RAG akan ditangani pada tahap AI.
 
+## SPMI, PPEPP, AMI, dan RTL/CAPA
+
+Pengguna dengan permission `quality.view` dapat membuka `/institutions/{slug}/quality`. Pengelolaan standar/indikator, aktivitas PPEPP, perencanaan AMI, checklist, temuan, bukti, dan tindakan korektif dikendalikan permission khusus (`quality.standards.manage`, `quality.activities.manage`, `quality.audits.manage`, `quality.findings.manage`, dan `quality.actions.manage`). Role `tenant.quality_auditor` hanya dapat mengerjakan checklist audit yang menugaskannya; audit lain dan perubahan tenant/unit tetap ditolak oleh server.
+
+Standar mendukung unit pemilik, versi, masa berlaku, target indikator, metode pengukuran, dan frekuensi yang diisi sesuai kebijakan institusi. Standar yang dipublikasikan tidak dapat diedit; buat versi baru untuk revisi. Tahap PPEPP dan daftar status adalah kerangka aplikasi, bukan SOP resmi yang dipaksakan. Audit mendukung jadwal lokal sesuai zona waktu tenant, ruang lingkup, ketua/auditor, checklist, tingkat temuan, akar masalah, rekomendasi, PIC, dan tenggat.
+
+Dokumen bukti ditautkan berdasarkan `document_id` dan versi spesifik, bukan disalin. Relasi ke aktivitas PPEPP dan temuan AMI disimpan pada tabel bukti tenant-scoped; relasi ke indikator akreditasi tetap menggunakan repository relation yang sudah ada. Akses ke metadata dan unduhan dokumen tetap mengikuti permission dokumen, akses privat/unit, dan pemeriksaan tenant.
+
+Penutupan RTL/CAPA mensyaratkan verifikasi efektivitas secara default. Pengguna dengan `quality.policies.manage` dapat menyesuaikan kebijakan per institusi, termasuk mewajibkan persetujuan aktivitas PPEPP sebelum dinyatakan selesai; bila verifikator independen RTL/CAPA diwajibkan, PIC tindakan tidak dapat memverifikasi tindakannya sendiri. Persetujuan aktivitas dapat menyetujui atau mengembalikan pekerjaan untuk perbaikan. Verifikasi tidak efektif mengembalikan tindakan ke status berjalan. Histori status disimpan terpisah dan dicatat juga ke audit log, tanpa memasukkan uraian sensitif ke payload log. Dashboard overdue membandingkan tanggal tenggat dengan tanggal lokal tenant.
+
 ## Menjalankan aplikasi
 
 ```powershell
@@ -118,4 +128,4 @@ Atau jalankan seluruh pemeriksaan berurutan:
 composer check
 ```
 
-`composer install` menggunakan `composer.lock`; `npm ci` menggunakan `package-lock.json`. GitHub Actions menjalankan quality gates PHP dan build frontend untuk setiap push dan pull request; gunakan hasil workflow sebagai pemeriksaan sebelum merge. MySQL lokal sudah diverifikasi; persetujuan schema dataset pilot, layanan scanner/OCR production, pengiriman email undangan, MFA, SSO, modul mutu/AMI dan AI/RAG, serta operasi produksi masih menjadi pekerjaan berikutnya.
+`composer install` menggunakan `composer.lock`; `npm ci` menggunakan `package-lock.json`. GitHub Actions menjalankan quality gates PHP dan build frontend untuk setiap push dan pull request; gunakan hasil workflow sebagai pemeriksaan sebelum merge. MySQL lokal sudah diverifikasi; persetujuan schema dataset pilot, layanan scanner/OCR production, pengiriman email undangan, MFA, SSO, AI/RAG, dan operasi produksi masih menjadi pekerjaan berikutnya.

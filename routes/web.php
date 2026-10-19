@@ -8,6 +8,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\OrganizationalUnitController;
 use App\Http\Controllers\PerformanceImportController;
+use App\Http\Controllers\QualityController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -110,6 +111,58 @@ Route::middleware(['auth', 'verified', 'tenant.context'])
             ->whereNumber('document')
             ->whereNumber('version')
             ->name('documents.versions.download');
+
+        Route::get('/quality', [QualityController::class, 'index'])->name('quality.index');
+        Route::post('/quality/policies', [QualityController::class, 'updatePolicy'])->name('quality.policies.update');
+        Route::post('/quality/standards', [QualityController::class, 'storeStandard'])->name('quality.standards.store');
+        Route::patch('/quality/standards/{standard}', [QualityController::class, 'updateStandard'])
+            ->whereNumber('standard')
+            ->name('quality.standards.update');
+        Route::post('/quality/standards/{standard}/indicators', [QualityController::class, 'storeIndicator'])
+            ->whereNumber('standard')
+            ->name('quality.indicators.store');
+        Route::patch('/quality/standards/{standard}/indicators/{indicator}', [QualityController::class, 'updateIndicator'])
+            ->whereNumber('standard')
+            ->whereNumber('indicator')
+            ->name('quality.indicators.update');
+        Route::patch('/quality/standards/{standard}/status', [QualityController::class, 'updateStandardStatus'])
+            ->whereNumber('standard')
+            ->name('quality.standards.status');
+        Route::post('/quality/activities', [QualityController::class, 'storeActivity'])->name('quality.activities.store');
+        Route::patch('/quality/activities/{activity}/status', [QualityController::class, 'updateActivityStatus'])
+            ->whereNumber('activity')
+            ->name('quality.activities.status');
+        Route::post('/quality/activities/{activity}/approval', [QualityController::class, 'reviewActivity'])
+            ->whereNumber('activity')
+            ->name('quality.activities.approval');
+        Route::post('/quality/activities/{activity}/evidence', [QualityController::class, 'storeActivityEvidence'])
+            ->whereNumber('activity')
+            ->name('quality.activities.evidence.store');
+        Route::post('/quality/audits', [QualityController::class, 'storeAudit'])->name('quality.audits.store');
+        Route::patch('/quality/audits/{audit}/status', [QualityController::class, 'updateAuditStatus'])
+            ->whereNumber('audit')
+            ->name('quality.audits.status');
+        Route::post('/quality/audits/{audit}/checklist', [QualityController::class, 'storeChecklistItem'])
+            ->whereNumber('audit')
+            ->name('quality.checklist.store');
+        Route::patch('/quality/checklist/{item}', [QualityController::class, 'updateChecklistItem'])
+            ->whereNumber('item')
+            ->name('quality.checklist.update');
+        Route::post('/quality/audits/{audit}/findings', [QualityController::class, 'storeFinding'])
+            ->whereNumber('audit')
+            ->name('quality.findings.store');
+        Route::post('/quality/findings/{finding}/evidence', [QualityController::class, 'storeFindingEvidence'])
+            ->whereNumber('finding')
+            ->name('quality.findings.evidence.store');
+        Route::post('/quality/findings/{finding}/actions', [QualityController::class, 'storeCorrectiveAction'])
+            ->whereNumber('finding')
+            ->name('quality.actions.store');
+        Route::patch('/quality/actions/{action}/status', [QualityController::class, 'updateCorrectiveActionStatus'])
+            ->whereNumber('action')
+            ->name('quality.actions.status');
+        Route::post('/quality/actions/{action}/verify', [QualityController::class, 'verifyCorrectiveAction'])
+            ->whereNumber('action')
+            ->name('quality.actions.verify');
     });
 
 Route::middleware(['auth', 'verified'])

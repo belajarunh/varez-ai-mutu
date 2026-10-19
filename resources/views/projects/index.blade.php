@@ -26,6 +26,11 @@
                     Repositori bukti
                 </a>
             @endif
+            @if (auth()->user()->hasPermission('quality.view', $tenant))
+                <a href="{{ route('institutions.quality.index', $tenant->slug) }}" class="btn btn-outline-success">
+                    Penjaminan mutu
+                </a>
+            @endif
         </div>
 
         @if (session('status'))
